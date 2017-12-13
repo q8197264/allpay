@@ -1,0 +1,201 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <title></title>
+<style id="system" type="text/css">h1,h2,h3,h4,h5,h6,p,blockquote {    margin: 0;    padding: 0;}body {    font-family: "Helvetica Neue", Helvetica, "Hiragino Sans GB", Arial, sans-serif;    font-size: 13px;    line-height: 18px;    color: #fff;    background-color: #282a36;    margin: 10px 13px 10px 13px;}a {    color: #59acf3;}a:hover {    color: #a7d8ff;    text-decoration: none;}a img {    border: none;}p {    margin-bottom: 9px;}h1,h2,h3,h4,h5,h6 {    color: #fff;    line-height: 36px;}h1 {    margin-bottom: 18px;    font-size: 30px;}h2 {    font-size: 24px;}h3 {    font-size: 18px;}h4 {    font-size: 16px;}h5 {    font-size: 14px;}h6 {    font-size: 13px;}hr {    margin: 0 0 19px;    border: 0;    border-bottom: 1px solid #ccc;}blockquote {    padding: 13px 13px 21px 15px;    margin-bottom: 18px;    font-family:georgia,serif;    font-style: italic;}blockquote:before {    content:"C";    font-size:40px;    margin-left:-10px;    font-family:georgia,serif;    color:#eee;}blockquote p {    font-size: 14px;    font-weight: 300;    line-height: 18px;    margin-bottom: 0;    font-style: italic;}code, pre {    font-family: Monaco, Andale Mono, Courier New, monospace;}code {	color: #ff4a14;    padding: 1px 3px;    font-size: 12px;    -webkit-border-radius: 3px;    -moz-border-radius: 3px;    border-radius: 3px;}pre {    display: block;    padding: 14px;    margin: 0 0 18px;    line-height: 16px;    font-size: 11px;    border: 1px solid #bf370f;    white-space: pre;    white-space: pre-wrap;    word-wrap: break-word;}pre code {    background-color: #282a36;    color: #ff4a14;    font-size: 11px;    padding: 0;}@media screen and (min-width: 768px) {    body {        width: 748px;        margin:10px auto;    }}</style><style id="custom" type="text/css"></style></head>
+<body><h4>支付集成网关接口 V3</h4>
+<p>开发人员：刘孝全
+</p>
+<h3>一、支付流程图</h3>
+<pre><code class="lang-c">|```````````````|
+| 调起支付 pay    &gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;   |`````````````|
+|_______________|               | 支付宝      |
+                                |  微信       |
+                                |  银联       |
+|````````````````|              | 快捷支付    |
+| 接收通知 notify  &lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;  |_____________|
+|________________|</code></pre>
+<h3>二、支付接口目录结构说明</h3>
+<pre><code class="lang-c">
+                   | abstract|- gateway.abstract.php 支付网关抽象类接口
+                   |
+                   |        |- config.php        基础配置与核心文件加载
+                   | config-|
+                   |
+                   | common-| comm.func.php     公共函数
+                   |
+                   | log ---|PayLog.php        日志
+                   |
+                   |        |router.php     url路由:http://component.yaofang.cn/allpay/cy_allpay.php?m=pay&amp;out_trade_no=123223421&amp;total_fee=1&amp;pay_id=1...
+                   | Core --|
+                   |        |
+                   |
+                   |
+    comm_pay.php --| gateway --| alipay()    各三方支付网关
+                   |
+                   |
+                   |
+                   |
+                   |
+                   | db --| DB.php</code></pre>
+<h3>三、接口调用</h3>
+<h4>1.快速调用开发</h4>
+<pre><code class="lang-php">&lt;?php
+        *支付所需参数:
+
+        $config['defaultbank'] = CMB;                 //银联简码                      [银联支付必填]
+        $config['notify_url'] = 'http://www.yaofang.cn/a/pay/notify.php?pay_id='.$pay_id;              [必填]
+        $config['return_url'] = 'http://www.yaofang.cn/a/pay/call_back.php?pay_id='.$pay_id;           [必填]
+        //$config['aliPayUrl']=1;                             //输出支付链接, 只对支付宝有效    [可选]
+        $this-&gt;payapi-&gt;_config($config);    //载入参数配置
+        $msg = $this-&gt;payapi-&gt;pay( $order_id, $pay_id, $card_number, $vcode ); //调起支付
+?&gt;</code></pre>
+<pre><code class="lang-php">&lt;?php
+        *异步通知
+        $pay_id = $_GET['pay_id'];
+        $config['log_path'] = "/apache/applog/www.yaofang.cn/paylog/logs";
+        $this-&gt;payapi-&gt;_config($config);
+        $this-&gt;payapi-&gt;notify( $pay_id );
+?&gt;</code></pre>
+<pre><code class="lang-php">&lt;?php
+        //同步跳转通知
+        $pay_id = $_GET['pay_id'];
+        $data = $this-&gt;payapi-&gt;return_url( $pay_id );
+?&gt;</code></pre>
+<h4>2.高级配置</h4>
+<pre><code class="lang-php">&lt;?php
+        文档完善中...
+?&gt;</code></pre>
+<p>四、接口测试
+
+</p>
+<pre><code>支付宝测试：
+http://component.yaofang.cn/allpay/cy_allpay/pay?order_id=4343434&amp;out_trade_no=123223421&amp;total_fee=1&amp;pay_id=1&amp;notify_url=http://m.yaofang.cn/pay/notify/1&amp;return_url=http://m.yaofang.cn/pay/return_url/1
+
+微信支付二维码测试：
+http://component.yaofang.cn/allpay/cy_allpay/pay?out_trade_no=12223223421&amp;total_fee=1&amp;pay_id=25&amp;notify_url=http://m.yaofang.cn/pay/notify/25&amp;return_url=http://m.yaofang.cn/pay/return_url/25</code></pre>
+<p>------------------- END ----------------------------
+
+
+
+
+
+
+
+
+</p>
+<p>银行简码：
+中国工商银行: ICBCB2C ICBC_OUT.gif
+招商银行    :CMB
+$alipay=array(    0=&gt;array(
+        'bankname'=&gt;'中国工商银行 ICBCB2C',
+        'bankimg'=&gt;'ICBC_OUT.gif',
+        'bankcode'=&gt;''),
+        1=&gt;array(
+            'bankname'=&gt;'招商银行',
+            'bankimg'=&gt;'CMB_OUT.gif',
+            'bankcode'=&gt;'CMB'),
+        2=&gt;array(
+            'bankname'=&gt;'中国建设银行',
+            'bankimg'=&gt;'CCB_OUT.gif',
+            'bankcode'=&gt;'CCB'),
+        3=&gt;array(
+            'bankname'=&gt;'中国农业银行',
+            'bankimg'=&gt;'ABC_OUT.gif',
+            'bankcode'=&gt;'ABC'),
+        4=&gt;array(
+            'bankname'=&gt;'上海浦东发展银行',
+            'bankimg'=&gt;'SPDB_OUT.gif',
+            'bankcode'=&gt;'SPDB'),
+        5=&gt;array(
+            'bankname'=&gt;'兴业银行',
+            'bankimg'=&gt;'CIB_OUT.gif',
+            'bankcode'=&gt;'CIB'),
+        6=&gt;array(
+            'bankname'=&gt;'广东发展银行',
+            'bankimg'=&gt;'GDB_OUT.gif',
+            'bankcode'=&gt;'GDB'),
+        7=&gt;array(
+            'bankname'=&gt;'温州银行',
+            'bankimg'=&gt;'wz_bank.jpg',
+            'bankcode'=&gt;'WZCBB2C-DEBIT'),
+        8=&gt;array(
+            'bankname'=&gt;'中国民生银行',
+            'bankimg'=&gt;'CMBC_OUT.gif',
+            'bankcode'=&gt;'CMBC'),
+        9=&gt;array(
+            'bankname'=&gt;'交通银行',
+            'bankimg'=&gt;'COMM_OUT.gif',
+            'bankcode'=&gt;'COMM'),
+        10=&gt;array(
+            'bankname'=&gt;'中国银行',
+            'bankimg'=&gt;'BOC_OUT.gif',
+            'bankcode'=&gt;'BOCB2C'),
+        11=&gt;array(
+            'bankname'=&gt;'中信银行',
+            'bankimg'=&gt;'CITIC_OUT.gif',
+            'bankcode'=&gt;'CITIC'),
+        12=&gt;array(
+            'bankname'=&gt;'中国光大银行',
+            'bankimg'=&gt;'CEB_OUT.gif',
+            'bankcode'=&gt;'CEBBANK'),
+        13=&gt;array(
+            'bankname'=&gt;'杭州银行',
+            'bankimg'=&gt;'HZCB_OUT.gif',
+            'bankcode'=&gt;'HZCBB2C'),
+        14=&gt;array(
+            'bankname'=&gt;'中国工商银行(B2B)',
+            'bankimg'=&gt;'ENV_ICBC_OUT.gif',
+            'bankcode'=&gt;'ICBCBTB'),
+        15=&gt;array(
+            'bankname'=&gt;'中国农业银行(B2B)',
+            'bankimg'=&gt;'ENV_ABC_OUT.gif',
+            'bankcode'=&gt;'ABCBTB'),
+        16=&gt;array(
+            'bankname'=&gt;'上海浦东发展银行(B2B)',
+            'bankimg'=&gt;'ENV_SPDB_OUT.gif',
+            'bankcode'=&gt;'SPDBB2B'),
+        17=&gt;array(
+            'bankname'=&gt;'中国建设银行(B2B)',
+            'bankimg'=&gt;'jsb2b.gif',
+            'bankcode'=&gt;'CCBB2B'),
+        18=&gt;array(
+            'bankname'=&gt;'上海银行',
+            'bankimg'=&gt;'sh.gif',
+            'bankcode'=&gt;'SHBANK'),
+        19=&gt;array(
+            'bankname'=&gt;'宁波银行',
+            'bankimg'=&gt;'nb.gif',
+            'bankcode'=&gt;'NBBANK'),
+        20=&gt;array(
+            'bankname'=&gt;'上海农商银行',
+            'bankimg'=&gt;'shns_bank.jpg',
+            'bankcode'=&gt;'SHRCB'),
+        21=&gt;array(
+            'bankname'=&gt;'富滇银行',
+            'bankimg'=&gt;'fd_bank.jpg',
+            'bankcode'=&gt;'FDB'),
+        22=&gt;array(
+            'bankname'=&gt;'北京银行',
+            'bankimg'=&gt;'bj_bank.jpg',
+            'bankcode'=&gt;'BJBANK'),
+        23=&gt;array(
+            'bankname'=&gt;'北京农村商业银行',
+            'bankimg'=&gt;'bjns_bank.jpg',
+            'bankcode'=&gt;'BJRCB'),
+        24=&gt;array(
+            'bankname'=&gt;'中国邮政储蓄银行',
+            'bankimg'=&gt;'zgyz_bank.jpg',
+            'bankcode'=&gt;'POSTGC'),
+        25=&gt;array(
+            'bankname'=&gt;'平安银行',
+            'bankimg'=&gt;'pg.gif',
+            'bankcode'=&gt;'SPABANK'),
+        26=&gt;array(
+            'bankname'=&gt;'深圳发展银行',
+            'bankimg'=&gt;'SDB_OUT.gif',
+            'bankcode'=&gt;'SDB')
+
+</p>
+<pre><code>);</code></pre>
+<p>Edit By <a href="http://mahua.jser.me">MaHua</a></p>
+</body></html>
